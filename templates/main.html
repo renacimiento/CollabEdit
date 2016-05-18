@@ -1,0 +1,25 @@
+<html>
+</head>
+<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
+
+<script type="text/javascript">
+	$(document).ready(function(){
+	   $("#editor").on('input', function(event) {
+	   		var data = {};
+	   		data["content"] = $('#editor').text()
+		    var saveData = $.ajax({
+			      type: 'POST',
+			      url: "/data",
+			      data: data,
+			      success: function(resultData) { console.log("Saved!"); }
+			});
+			saveData.error(function() { console.log("Something went wrong"); });
+ 		});
+});
+</script>
+</head>
+<body>
+	<p> Collabaritive Editor</p>
+<div id='editor' contenteditable='true' style="height:100px;width:1000px;border:solid;"></div>
+</body>
+</html>
