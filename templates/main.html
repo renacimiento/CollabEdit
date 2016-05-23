@@ -3,29 +3,32 @@
 <script src="{{ url_for('static', filename='jquery.min.js') }}"></script>
 
 <script type="text/javascript">
-	function sse() {
-        var source = new EventSource('/listen');
-        var out = document.getElementById('editor');
-        source.onmessage = function(e) {
-            out.innerHTML =  e.data 
-        };
-    }
 	$(document).ready(function(){
-		content = ""
-		contentOld = ""
-	   $("#editor").on('input', function(event) {
+		contentOld = $("#editor").text();
+		function sse() {
+	        var source = new EventSource('/listen');
+	        var out = document.getElementById('editor');
+	        source.onmessage = function(e) {
+	            out.innerHTML =  e.data 
+	            contentOld = out.innerHTML;
+	        };
+	    }
+	    sse();
+	    $("#editor").on('input', function(event) {
 			var data = {};
 	   		cursorPosition = window.getSelection().getRangeAt(0).startOffset
 	   		console.log(cursorPosition)
 	   		content = $('#editor').text();
 	   		if (content.length < contentOld.length) {
-	   			console.log("Character " + contentOld[cursorPosition] + " Deleted at position " + cursorPosition);
+	   			console.log("Character " + contentOld[cursorPosition] + " Deleted at position " + (cursorPosition + 1));
 	   			data["character"] = contentOld[cursorPosition];
+	   			data["position"] = cursorPosition + 1
 	   			data["type"] = 1
 	   		} else {
-	   			console.log("Character "+ content[cursorPosition-1]+ " Inserted at postion " + (cursorPosition - 1));
+	   			console.log("Character "+ content[cursorPosition-1]+ " Inserted at postion " + cursorPosition);
 	   			data["character"] = content[cursorPosition - 1] 
-	   			data["character"] = 0
+	   			data["position"] = cursorPosition
+	   			data["type"] = 0
 	   		}
 	   		contentOld = content;
 	   		data["content"] = $('#editor').text()
@@ -37,13 +40,12 @@
 			});
 			saveData.error(function() { console.log("Something went wrong"); });
  		});
-	sse()
-});
+	});
 </script>
 </head>
 <body>
 	<p> Collabaritive Editor</p>
-<div id='editor' contenteditable='true' style="height:100px;width:1000px;border:solid;"></div>
+<div id='editor' contenteditable='true' style="height:100px;width:1000px;border:solid;">{% if content %}{{content}}{% endif %}</div>
 <div id='messages'> </div>
 </body>
 </html>
