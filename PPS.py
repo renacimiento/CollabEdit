@@ -15,10 +15,14 @@ class PPS:
 			return (float)(self.ppsList[position-2][0] + self.ppsList[position-1][0])/2
 
 	def insertCharacter(self,s,position):
-		self.ppsList.insert(position - 1,[self.getNewPosition(position),s])
+		pos = self.getNewPosition(position)
+		self.ppsList.insert(position - 1,[pos,s])
+		return pos
 
 	def deleteCharacter(self,s,position):
+		posReturn = self.ppsList[position - 1][0]
 		del self.ppsList[position - 1]
+		return posReturn
 
 	def print_pps(self):
 		for obj in self.ppsList:
