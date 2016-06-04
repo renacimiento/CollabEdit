@@ -1,5 +1,7 @@
 import flask 
 import redis
+import json
+import time
 from PPS import PPS
 from hot_redis import Dict, List, Queue, transaction
 app = flask.Flask(__name__)
@@ -9,10 +11,11 @@ pps = PPS()
 def listen():
 	pubsub = app.redis.pubsub()
 	pubsub.subscribe('collabEdit')
+	lst = []
+	print "HERE"
 	for message in pubsub.listen():
-		print message
-    	if message["type"] != "subscribe":
-    		yield 'data: %s' % message['data']
+		if message["type"] != "subscribe":
+			yield 'data: %s\n\n' % message['data']
 
 def str_to_bool(s):
     if s == 'true':
@@ -31,7 +34,6 @@ def login():
 
 @app.route('/')
 def hello():
-	#pps.constructPPSFromDB(app.redis.get("content"))
 	if 'user' not in flask.session:
 		return flask.redirect('/login')
 	return flask.render_template('main.html')
@@ -42,20 +44,12 @@ def stream():
                           mimetype="text/event-stream")
 
 def post():
-	c = flask.request.form.get("character")
-	app.redis.set("content", flask.request.form.get("content"))
-	positionStamp = int(flask.request.form.get("positionStamp"))
-	characterState = str_to_bool(flask.request.form.get("state"))
 	data = {}
-	data["character"] = c
-	data["positionStamp"] = positionStamp
-	data["state"] = characterState
-	app.redis.publish("collabEdit",flask.request.form.get("content"))
-	print "PUBLISHED"
-
-# @app.route('/getPPS')
-# def getPPS():
-# 	return flask.jsonify(pps=pps.get_pps())
+	data["value"] = str(flask.request.form.get("value"))
+	data["positionStamp"] = float(flask.request.form.get("positionStamp"))
+	data["state"] = str(flask.request.form.get("state"))
+	data["clientID"] = str(flask.request.form.get("clientID"))
+	app.redis.publish("collabEdit",data)	
 
 @app.route("/data", methods=["POST"])
 def data():

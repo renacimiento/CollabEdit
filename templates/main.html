@@ -6,6 +6,13 @@
 	seq_number = 1
 	total_number = 1
 	PPS = []
+	function Generator() {};
+	Generator.prototype.rand =  Math.floor(Math.random() * 26) + Date.now();
+	Generator.prototype.getId = function() {
+		return this.rand++;
+	};
+	var idGen = new Generator();
+	var clientID = idGen.getId();
 	function getNewPosition(position){
 		if (position > len(PPS) + 1){
 			return "ERROR"
@@ -51,12 +58,12 @@
 		index = -1;
 		trueCount = 0;
 		for (var i = 0; i < PPS.length; i++) {
-			if (PPS[i]["state"] == true){
-				trueCount++;
-		    }
 		    if (PPS[i]["positionStamp"] > elem["positionStamp"]){
 		    	index = i;
 		    	break;
+		    }
+			if (PPS[i]["state"] == true){
+				trueCount++;
 		    }
 		    if (PPS[i]["positionStamp"] == elem["positionStamp"]){
 		    	console.log(elem["state"])
@@ -70,7 +77,7 @@
 		}
 		PPS.splice(index, 0, elem)
 		if(fromServer){
-			insert_Character_TextBox(elem["value"],trueCount)
+			insert_Character_TextBox(elem["value"],trueCount+1)
 		}
 	}
 	function deletePPS(elem,fromServer){
@@ -187,13 +194,18 @@
 	        var out = document.getElementById('editor');
 	        source.onmessage = function(e) {
 	        	fromServer = true
-	        	out.innerHTML =  e.data 
-	        	contentOld = out.innerHTML;
-	        	// if(resp["state"] == true){
-	         //    	insertPPS(e.data,fromServer)
-	        	// } else {
-	        	// 	deletePPS(e.data,fromServer)
-	        	// }
+	        	var b = e.data.replace(/'/g, '"');
+	        	resp = JSON.parse(b)
+	        	if(resp["clientID"] == clientID)
+	        		return
+	        	if(resp["state"] == "true"){
+	        		resp["state"] = true
+	            	insertPPS(resp,fromServer)
+	        	} else {
+	        		resp["state"] = false
+	        		deletePPS(resp,fromServer)
+	        	}
+				contentOld = out.innerHTML;
 	        };
 	    }
 		contentOld = $("#editor").text();
@@ -218,6 +230,7 @@
 	   		}
 	   		contentOld = content;
 	   		data["content"] = $('#editor').text()
+	   		data["clientID"] = clientID;
 	   		var saveData = $.ajax({
 			      type: 'POST',
 			      url: "/data",
