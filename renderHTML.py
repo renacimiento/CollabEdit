@@ -8,11 +8,11 @@ app = flask.Flask(__name__)
 app.redis = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.secret_key = 'asdf'
 pps = PPS()
+counter = 0
 def listen():
 	pubsub = app.redis.pubsub()
 	pubsub.subscribe('collabEdit')
 	lst = []
-	print "HERE"
 	for message in pubsub.listen():
 		if message["type"] != "subscribe":
 			yield 'data: %s\n\n' % message['data']
@@ -25,17 +25,8 @@ def str_to_bool(s):
     else:
          raise ValueError # evil ValueError that doesn't tell you what the wrong value was
 
-@app.route('/login', methods=["POST","GET"])
-def login():
-	if flask.request.method == 'POST':
-		flask.session['user'] = flask.request.form['user']
-		return flask.redirect('/')
-	return flask.render_template('login.html')
-
 @app.route('/')
 def hello():
-	if 'user' not in flask.session:
-		return flask.redirect('/login')
 	return flask.render_template('main.html')
 
 @app.route('/listen')
@@ -51,6 +42,15 @@ def post():
 	data["clientID"] = str(flask.request.form.get("clientID"))
 	app.redis.publish("collabEdit",data)	
 
+@app.route('/onboard',methods=["POST"])
+def onboard():
+	global counter
+	clientID = flask.request.form.get("clientID")
+	if clientID not in flask.session:
+		counter = counter + 1
+		flask.session[clientID] = counter
+	return flask.jsonify(sequenceNumber=flask.session[clientID])
+
 @app.route("/data", methods=["POST"])
 def data():
 	post()
@@ -64,8 +64,9 @@ def shutdown_server():
 
 @app.route('/shutdown', methods=['GET'])
 def shutdown():
-    shutdown_server()
-    return 'Server shutting down...'
+	flask.session.clear()
+	shutdown_server()
+	return 'Server shutting down...'
 
 if __name__ == "__main__":
 	app.debug=True
